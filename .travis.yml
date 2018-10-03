@@ -9,7 +9,6 @@ env:
 sudo: true
 before_install:
 - sudo apt install subversion
-- sudo apt install libcurl4-openssl-dev
 before_script:
 - svn export svn://svn.zabbix.com/$BRANCH zabbix
 - cd zabbix
