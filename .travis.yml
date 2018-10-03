@@ -1,0 +1,19 @@
+language: c
+compiler:
+- clang
+- gcc
+env:
+- BRANCH=trunk
+- BRANCH=branches/3.4
+sudo: true
+before_install:
+- sudo apt install subversion
+- sudo apt install libcurl-dev
+before_script:
+- svn export svn://svn.zabbix.com/$BRANCH zabbix
+- cd zabbix
+- ./bootstrap.sh
+- ./configure
+- cd -
+script:
+- $CC -fPIC -shared -o effluence.so src/*.c -Izabbix/include `curl-config --cflags --libs`
