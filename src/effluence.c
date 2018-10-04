@@ -8,44 +8,8 @@
 #include "sysinc.h"
 #include "module.h"
 
+#include "configuration.h"
 #include "utils.h"
-
-typedef enum
-{
-	EFFLU_DATA_TYPE_FLOAT = 0,
-	EFFLU_DATA_TYPE_INTEGER,
-	EFFLU_DATA_TYPE_STRING,
-	EFFLU_DATA_TYPE_TEXT,
-	EFFLU_DATA_TYPE_LOG,
-	EFFLU_DATA_TYPE_COUNT
-}
-efflu_data_type_t;
-
-typedef struct
-{
-	const char	*url;
-	const char	*db;
-	const char	*user;
-	const char	*pass;
-}
-efflu_destination_t;
-
-typedef struct
-{
-	efflu_destination_t	global;
-	efflu_destination_t	*by_type[EFFLU_DATA_TYPE_COUNT];
-}
-efflu_configuration_t;
-
-efflu_configuration_t	configuration = {
-	.global = {
-		.url = "http://localhost:8086",
-		.db = "zabbix",
-		.user = NULL,
-		.pass = NULL
-	},
-	.by_type = {0}
-};
 
 CURL	*hnd = NULL;
 
@@ -58,6 +22,9 @@ int	zbx_module_init(void)
 {
 	const char	efflu_config[] = "EFFLU_CONFIG", *config_file_name;
 	FILE		*config_file;
+	int		ret = ZBX_MODULE_OK;
+
+	printf("Initializing \"effluence\" module...\n");
 
 	if (NULL == (config_file_name = secure_getenv(efflu_config)))
 	{
@@ -73,34 +40,39 @@ int	zbx_module_init(void)
 		return ZBX_MODULE_FAIL;
 	}
 
-	/* TODO read configuration: uint,dbl,str,log,text */
+	if (0 != efflu_parse_configuration(config_file))
+	{
+		printf("Failure to read configuration from \"%s\".\n", config_file_name);
+		ret = ZBX_MODULE_FAIL;
+	}
 
 	if (0 != fclose(config_file))
 		printf("Failure to close \"%s\": %s.\n", config_file_name, strerror(errno));
 
 	/* TODO ping InfluxDB to see if it's up */
 
-	return ZBX_MODULE_OK;
+	if (ZBX_MODULE_OK == ret)
+		printf("Module \"effluence\" has been successfully initialized.\n");
+
+	return ret;
 }
 
 int	zbx_module_uninit(void)
 {
-	/* TODO ??? */
+	printf("Uninitializing \"effluence\" module...\n");
+
+	printf("Cleaning up cURL handle...\n");
+
 	if (NULL != hnd)
 		curl_easy_cleanup(hnd);
 
-	return ZBX_MODULE_OK;
-}
+	printf("Cleaning up configuration data...\n");
 
-static efflu_destination_t	efflu_configured_destination(efflu_data_type_t type)
-{
-	/* TODO return actual destination from the configuration file */
-	return (efflu_destination_t){
-		.url = (NULL != configuration.by_type[type] ? configuration.by_type[type]->url : configuration.global.url),
-		.db = (NULL != configuration.by_type[type] ? configuration.by_type[type]->db : configuration.global.db),
-		.user = (NULL != configuration.by_type[type] ? configuration.by_type[type]->user : configuration.global.user),
-		.pass = (NULL != configuration.by_type[type] ? configuration.by_type[type]->pass : configuration.global.pass)
-	};
+	efflu_clean_configuration();
+
+	printf("Module \"effluence\" has been successfully uninitialized.\n");
+
+	return ZBX_MODULE_OK;
 }
 
 static char	*efflu_escape(const char *string)
@@ -133,6 +105,10 @@ static char	*efflu_escape(const char *string)
 	
 	return string_esc;
 }
+
+/* To avoid confusion data is split into measurements according to Zabbix data types, measurements are named  */
+/* after Zabbix DB tables: history, history_uint, history_str, history_text, history_log. Actually, there is  */
+/* no real difference in how "Numeric (float)" and "Numeric (unsigned)" or "Character" and "Text" are stored. */
 
 static void	efflu_append_FLOAT_line(char **post, size_t *size, size_t *offset, const ZBX_HISTORY_FLOAT *data)
 {
@@ -192,8 +168,15 @@ static void	efflu_write(efflu_destination_t destination, const char *post)
 
 	/* TODO Need a portable alternative to asprintf() */
 	asprintf(&endpoint, "%s/write?db=%s", destination.url, destination.db);
-	/* TODO authentication */
+	/* TODO handle potential errors of curl_easy_setopt() */
 	curl_easy_setopt(hnd, CURLOPT_URL, endpoint);
+
+	if (NULL != destination.user)
+		curl_easy_setopt(hnd, CURLOPT_USERNAME, destination.user);
+
+	if (NULL != destination.pass)
+		curl_easy_setopt(hnd, CURLOPT_PASSWORD, destination.pass);
+
 	curl_easy_setopt(hnd, CURLOPT_POSTFIELDS, post);
 
 	if (CURLE_OK != (ret = curl_easy_perform(hnd)))
