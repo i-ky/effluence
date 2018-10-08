@@ -30,7 +30,7 @@ Typical ways to cure the problem are:
 - replacing HDDs with SSDs on the database server;
 - using clustered drop-in replacements of supported database backends (e.g. [Percona](https://www.percona.com))
 
-But everyone seems to agree that the ultimate solution would be to offload historical data into more suitable storage engine.
+But everyone seems to agree that the ultimate solution would be to offload historical data into a more suitable storage engine.
 
 Multiple NoSQL solutions and numerous time-series databases were named as alternatives to SQL.
 The relevant discussion can be found
@@ -64,7 +64,9 @@ and resolve `{ITEM.VALUE}` macros.
 As we know, small tables are fast
 and as a consequence database write operations will no longer limit the performance of Zabbix server!
 
-## compilation
+## quick start
+
+### compile
 
 1. [Download](http://www.zabbix.com/download)
 Zabbix source or check it out from
@@ -82,7 +84,7 @@ development packages.
 
 4. Run `make` to build, it should produce `effluence.so` shared library.
 
-## installation
+### install
 
 1. Install
 [`libcurl`](https://curl.haxx.se/libcurl/)
@@ -94,11 +96,15 @@ in case you were compiling on a different machine.
 
 3. Set up necessary permissions.
 
-## configuration
+### configure
 
-1. Create database(s) and user(s) in your InfluxDB instance(s).
+1. Create
+[database(s)](https://docs.influxdata.com/influxdb/latest/introduction/getting-started/#creating-a-database)
+and
+[user(s)](docs.influxdata.com/influxdb/latest/administration/authentication_and_authorization)
+in your InfluxDB instance(s).
 
-2. Create module configuration file:
+2. Create module [configuration file](#configuration-file-format):
 ```yaml
 url:  http://localhost:8086
 db:   zabbix
@@ -117,3 +123,107 @@ LoadModule=effluence.so
 ```
 
 5. Restart Zabbix server.
+
+## boring details
+
+### configuration file format
+
+Module uses
+[YAML Ain't Markup Language](http://yaml.org)
+format of configuration file.
+Here is the list of attributes one can specify there:
+
+attribute |           | description
+----------|-----------|------------
+`url`     | mandatory | URL to send requests to (`/write` is added automatically)
+`db`      | mandatory | database where to store data
+`user`    | optional  | username to use for authentication
+`pass`    | optional  | password to use for authentication
+
+These attributes can be specified in the root of the document,
+this way they will have global effect.
+When different types need to be stored
+in different InfluxDB instances,
+different databases
+or on behalf of different users,
+same attributes can be specified per data type
+(names should be familiar to anyone who has ever tried to
+[setup Zabbix with Elasticsearch](https://www.zabbix.com/documentation/current/manual/appendix/install/elastic_search_setup)):
+
+data type | *Type of information*
+----------|----------------------
+`dbl`     | *Numeric (float)*
+`uint`    | *Numeric (unsigned)*
+`str`     | *Character*
+`text`    | *Text*
+`log`     | *Log*
+
+If no attribute value is provided for a specific data type,
+module will use the respective global attribute value (if provided).
+If the configuration of a particular data type lacks any one of mandatory attributes
+and there is no global value for that attribute,
+then the callback for that data type is not provided to Zabbix server
+and the data of this type are not being exported.
+
+#### configuration file examples
+
+##### minimalist configuration file
+
+When you have just installed InfluxDB
+and have not enabled authentication yet,
+you can use the following configuration.
+All data types will be exported
+and stored together.
+
+```yaml
+# one set of attributes for all data types
+url:  http://localhost:8086
+db:   zabbix
+```
+
+##### configuration with a special place for numeric types
+
+With the following configuration all data types will be exported,
+but `dbl` will be sent to a different URL,
+while `uint` is stored to a different database.
+
+```yaml
+# global attributes
+url:  http://localhost:8086 # will be used for `uint`, `str`, `text` and `log`
+db:   zabbix                # will be used for `dbl`, `str`, `text` and `log`
+
+dbl: # specifically for Numeric (float)
+  url: http://very.special.place
+
+uint: # specifically for Numeric (unsigned)
+  db: not_that_special_but_still
+```
+
+##### configuration file using YAML alias
+
+This configuration file shows
+how to avoid duplication
+and copy-paste errors
+using YAML *aliases* and *references*.
+
+```yaml
+str: # Character
+  url: &url http://localhost:8086
+  db: shorties
+
+text: # Text
+  url: *url # reference to &url
+  db: longies
+```
+
+##### configuration file for exporting numeric values only
+
+Another way to provide identical attributes for different data types is to use *array* of data types as *key* for type-specific attribute section.
+
+```yaml
+[dbl, uint]: # for both Numeric (float) and Numeric (unsigned)
+  url: http://localhost:8086
+  db: numeric
+  user: effluence
+  pass: r3a11y_$tr0n9_pa$$w0rd
+```
