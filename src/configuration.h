@@ -25,6 +25,7 @@ efflu_destination_t;
 
 int			efflu_parse_configuration(FILE *config_file);
 efflu_destination_t	efflu_configured_destination(efflu_data_type_t type);
+const char		*efflu_data_type_string(efflu_data_type_t type);
 void			efflu_clean_configuration(void);
 
 #endif	/* EFFLU_CONFIGURATION_H */

@@ -162,25 +162,28 @@ static void	efflu_write(efflu_destination_t destination, const char *post)
 {
 	char		*endpoint;
 	CURLcode	ret;
+	long		res;
 
 	if (NULL == hnd)
 		hnd = curl_easy_init();
 
 	/* TODO Need a portable alternative to asprintf() */
 	asprintf(&endpoint, "%s/write?db=%s", destination.url, destination.db);
-	/* TODO handle potential errors of curl_easy_setopt() */
-	curl_easy_setopt(hnd, CURLOPT_URL, endpoint);
 
-	if (NULL != destination.user)
-		curl_easy_setopt(hnd, CURLOPT_USERNAME, destination.user);
-
-	if (NULL != destination.pass)
-		curl_easy_setopt(hnd, CURLOPT_PASSWORD, destination.pass);
-
-	curl_easy_setopt(hnd, CURLOPT_POSTFIELDS, post);
-
-	if (CURLE_OK != (ret = curl_easy_perform(hnd)))
-		printf("Error while POSTing data: %s", curl_easy_strerror(ret));
+	if (CURLE_OK != (ret = curl_easy_setopt(hnd, CURLOPT_URL, endpoint)))
+		printf("Failed to set cURL URL option: %s\n", curl_easy_strerror(ret));
+	else if (NULL != destination.user && CURLE_OK != (ret = curl_easy_setopt(hnd, CURLOPT_USERNAME, destination.user)))
+		printf("Failed to set cURL username option: %s\n", curl_easy_strerror(ret));
+	else if (NULL != destination.pass && CURLE_OK != (ret = curl_easy_setopt(hnd, CURLOPT_PASSWORD, destination.pass)))
+		printf("Failed to set cURL password option: %s\n", curl_easy_strerror(ret));
+	else if (CURLE_OK != (ret = curl_easy_setopt(hnd, CURLOPT_POSTFIELDS, post)))
+		printf("Failed to set cURL POST fields option: %s\n", curl_easy_strerror(ret));
+	else if (CURLE_OK != (ret = curl_easy_perform(hnd)))
+		printf("Error while POSTing data: %s\n", curl_easy_strerror(ret));
+	else if (CURLE_OK != (ret = curl_easy_getinfo(hnd, CURLINFO_RESPONSE_CODE, &res)))
+		printf("Failed to get HTTP response code from cURL: %s\n", curl_easy_strerror(ret));
+	else if (204 == res)	/* No Content */
+		printf("Got HTTP response code %ld when writing to %s\n", res, endpoint);
 
 	free(endpoint);
 }
@@ -215,14 +218,43 @@ EFFLU_CALLBACK(LOG)
 
 ZBX_HISTORY_WRITE_CBS	zbx_module_history_write_cbs(void)
 {
-	static ZBX_HISTORY_WRITE_CBS	callbacks =
+	static ZBX_HISTORY_WRITE_CBS	callbacks;
+	efflu_data_type_t		type = 0;
+
+	do
 	{
-		.history_float_cb = efflu_FLOAT_cb,
-		.history_integer_cb = efflu_INTEGER_cb,
-		.history_string_cb = efflu_STRING_cb,
-		.history_text_cb = efflu_TEXT_cb,
-		.history_log_cb = efflu_LOG_cb
-	};
+		efflu_destination_t	destination;
+
+		destination = efflu_configured_destination(type);
+
+		if (NULL == destination.url || NULL == destination.db)
+		{
+			printf("History of type \"%s\" will not be exported.\n", efflu_data_type_string(type));
+			continue;
+		}
+
+		printf("History of type \"%s\" will be exported to URL \"%s\" and database \"%s\".\n",
+				efflu_data_type_string(type), destination.url, destination.db);
+
+		switch (type)
+		{
+			case EFFLU_DATA_TYPE_FLOAT:
+				callbacks.history_float_cb = efflu_FLOAT_cb;
+				break;
+			case EFFLU_DATA_TYPE_INTEGER:
+				callbacks.history_integer_cb = efflu_INTEGER_cb;
+				break;
+			case EFFLU_DATA_TYPE_STRING:
+				callbacks.history_string_cb = efflu_STRING_cb;
+				break;
+			case EFFLU_DATA_TYPE_TEXT:
+				callbacks.history_text_cb = efflu_TEXT_cb;
+				break;
+			case EFFLU_DATA_TYPE_LOG:
+				callbacks.history_log_cb = efflu_LOG_cb;
+		}
+	}
+	while (EFFLU_DATA_TYPE_COUNT > ++type);
 
 	return callbacks;
 }

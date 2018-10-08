@@ -77,20 +77,23 @@ static int	efflu_parse_node(yaml_document_t *config, const yaml_node_t *node, ef
 			}
 			else if (NULL != sub)
 			{
-				if (0 == efflu_scalar_cmp("dbl", key))
-					efflu_parse_node(config, yaml_document_get_node(config, pair->value), sub[EFFLU_DATA_TYPE_FLOAT], NULL);
-				else if (0 == efflu_scalar_cmp("uint", key))
-					efflu_parse_node(config, yaml_document_get_node(config, pair->value), sub[EFFLU_DATA_TYPE_INTEGER], NULL);
-				else if (0 == efflu_scalar_cmp("str", key))
-					efflu_parse_node(config, yaml_document_get_node(config, pair->value), sub[EFFLU_DATA_TYPE_STRING], NULL);
-				else if (0 == efflu_scalar_cmp("text", key))
-					efflu_parse_node(config, yaml_document_get_node(config, pair->value), sub[EFFLU_DATA_TYPE_TEXT], NULL);
-				else if (0 == efflu_scalar_cmp("log", key))
-					efflu_parse_node(config, yaml_document_get_node(config, pair->value), sub[EFFLU_DATA_TYPE_LOG], NULL);
+				efflu_data_type_t	type = 0;
+
+				do
+				{
+					if (0 != efflu_scalar_cmp(efflu_data_type_string(type), key))
+						continue;
+
+					efflu_parse_node(config, yaml_document_get_node(config, pair->value),
+							sub[type], NULL);
+					break;
+				}
+				while (EFFLU_DATA_TYPE_COUNT > ++type);
 			}
 			else
 			{
-				printf("Unexpected key \"%.*s\" in mapping.\n", (int)key->data.scalar.length, key->data.scalar.value);
+				printf("Unexpected key \"%.*s\" in mapping.\n",
+						(int)key->data.scalar.length, key->data.scalar.value);
 				return -1;
 			}
 		}
@@ -152,6 +155,25 @@ efflu_destination_t	efflu_configured_destination(efflu_data_type_t type)
 	};
 
 #undef EFFLU_GET_CONFIG
+}
+
+const char	*efflu_data_type_string(efflu_data_type_t type)
+{
+	switch (type)
+	{
+		case EFFLU_DATA_TYPE_FLOAT:
+			return "dbl";
+		case EFFLU_DATA_TYPE_INTEGER:
+			return "uint";
+		case EFFLU_DATA_TYPE_STRING:
+			return "str";
+		case EFFLU_DATA_TYPE_TEXT:
+			return "text";
+		case EFFLU_DATA_TYPE_LOG:
+			return "log";
+		default:
+			return "unknown";
+	}
 }
 
 static void	efflu_clean_destination(efflu_destination_t destination)
