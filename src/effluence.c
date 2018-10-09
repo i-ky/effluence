@@ -160,17 +160,22 @@ static void	efflu_append_LOG_line(char **post, size_t *size, size_t *offset, con
 
 static void	efflu_write(efflu_destination_t destination, const char *post)
 {
-	char		*endpoint;
+	char		*db_encoded, *endpoint;
 	CURLcode	ret;
 	long		res;
 
-	if (NULL == hnd)
-		hnd = curl_easy_init();
+	if (NULL == hnd && (NULL == (hnd = curl_easy_init())))
+	{
+		printf("Failed to initialize cURL handle.\n");
+		return;
+	}
 
+	if (NULL == (db_encoded = curl_easy_escape(hnd, destination.db, 0)))
+		printf("Failed to URL encode database name.\n");
 	/* TODO Need a portable alternative to asprintf() */
-	asprintf(&endpoint, "%s/write?db=%s", destination.url, destination.db);
-
-	if (CURLE_OK != (ret = curl_easy_setopt(hnd, CURLOPT_URL, endpoint)))
+	else if (-1 == asprintf(&endpoint, "%s/write?db=%s", destination.url, db_encoded))
+		printf("Failed to compose write endpoint URL.\n");
+	else if (CURLE_OK != (ret = curl_easy_setopt(hnd, CURLOPT_URL, endpoint)))
 		printf("Failed to set cURL URL option: %s\n", curl_easy_strerror(ret));
 	else if (NULL != destination.user && CURLE_OK != (ret = curl_easy_setopt(hnd, CURLOPT_USERNAME, destination.user)))
 		printf("Failed to set cURL username option: %s\n", curl_easy_strerror(ret));
@@ -185,6 +190,7 @@ static void	efflu_write(efflu_destination_t destination, const char *post)
 	else if (204 == res)	/* No Content */
 		printf("Got HTTP response code %ld when writing to %s\n", res, endpoint);
 
+	curl_free(db_encoded);
 	free(endpoint);
 }
 
