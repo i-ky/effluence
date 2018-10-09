@@ -187,7 +187,7 @@ static void	efflu_write(efflu_destination_t destination, const char *post)
 		printf("Error while POSTing data: %s\n", curl_easy_strerror(ret));
 	else if (CURLE_OK != (ret = curl_easy_getinfo(hnd, CURLINFO_RESPONSE_CODE, &res)))
 		printf("Failed to get HTTP response code from cURL: %s\n", curl_easy_strerror(ret));
-	else if (204 == res)	/* No Content */
+	else if (204L != res)	/* No Content */
 		printf("Got HTTP response code %ld when writing to %s\n", res, endpoint);
 
 	curl_free(db_encoded);
