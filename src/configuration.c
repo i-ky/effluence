@@ -39,6 +39,7 @@ static char	*efflu_strdup(const yaml_node_t *node)
 	tmp = malloc(node->data.scalar.length + 1);
 	memcpy(tmp, node->data.scalar.value, node->data.scalar.length);
 	tmp[node->data.scalar.length] = '\0';
+	return tmp;
 }
 
 static int	efflu_parse_node(yaml_document_t *config, const yaml_node_t *node, efflu_destination_t *top, efflu_destination_t **sub)
