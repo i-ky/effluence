@@ -45,7 +45,7 @@ static int	efflu_parse_node(yaml_document_t *config, const yaml_node_t *node, ef
 {
 	const yaml_node_pair_t	*pair;
 
-	if (YAML_MAPPING_NODE == node->type)
+	if (YAML_MAPPING_NODE != node->type)
 	{
 		printf("Node must be a mapping.\n");
 		return -1;
