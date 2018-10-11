@@ -183,10 +183,9 @@ data type | *Type of information*
 `text`    | *Text*
 `log`     | *Log*
 
-If no attribute value is provided for a specific data type,
-module will use the respective global attribute value (if provided).
-If the configuration of a particular data type lacks any one of mandatory attributes
-and there is no global value for that attribute,
+If there is section for a specific data type,
+module will use global attributes (if provided).
+If the configuration of a particular data type lacks any one of mandatory attributes,
 then the callback for that data type is not provided to Zabbix server
 and the data of this type are not being exported.
 
@@ -213,15 +212,22 @@ but `dbl` will be sent to a different URL,
 while `uint` is stored to a different database.
 
 ```yaml
-# global attributes
-url:  http://localhost:8086 # will be used for `uint`, `str`, `text` and `log`
-db:   zabbix                # will be used for `dbl`, `str`, `text` and `log`
+# global attributes (will be used for Character, Text and Log)
+url:  http://localhost:8086
+db:   zabbix
+user: effluence
+pass: r3a11y_$tr0n9_pa$$w0rd
 
 dbl: # specifically for Numeric (float)
-  url: http://very.special.place
+  url:  http://very.special.place
+  db:   float_only
+  user: ecneulffe
+  pass: w34k_p4$$w0rd
 
 uint: # specifically for Numeric (unsigned)
-  db: not_that_special_but_still
+  url: http://only.for.unsigned
+  db:  not_that_special_but_still
+  # no authentication, global configuration does not apply
 ```
 
 ##### configuration file using YAML alias

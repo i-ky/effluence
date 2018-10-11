@@ -42,6 +42,13 @@ static char	*efflu_strdup(const yaml_node_t *node)
 	return tmp;
 }
 
+typedef struct
+{
+	const char	*name;
+	char		**storage;
+}
+efflu_configuration_option_t;
+
 static int	efflu_parse_node(yaml_document_t *config, const yaml_node_t *node, efflu_destination_t *top, efflu_destination_t **sub)
 {
 	const yaml_node_pair_t	*pair;
@@ -60,47 +67,117 @@ static int	efflu_parse_node(yaml_document_t *config, const yaml_node_t *node, ef
 
 		if (YAML_SCALAR_NODE == key->type)
 		{
-			if (0 == efflu_scalar_cmp("url", key))
+			const efflu_configuration_option_t	*option, options[] =
 			{
-				top->url = efflu_strdup(yaml_document_get_node(config, pair->value));
-			}
-			else if (0 == efflu_scalar_cmp("db", key))
+				{"url",		&top->url},
+				{"db",		&top->db},
+				{"user",	&top->user},
+				{"pass",	&top->pass},
+				{0}
+			};
+
+			for (option = options; NULL != option->name; option++)
 			{
-				top->db = efflu_strdup(yaml_document_get_node(config, pair->value));
+				if (0 == efflu_scalar_cmp(option->name, key))
+					break;
 			}
-			else if (0 == efflu_scalar_cmp("user", key))
+
+			if (NULL != option->name)
 			{
-				top->user = efflu_strdup(yaml_document_get_node(config, pair->value));
+				*option->storage = efflu_strdup(yaml_document_get_node(config, pair->value));
+				continue;
 			}
-			else if (0 == efflu_scalar_cmp("pass", key))
-			{
-				top->pass = efflu_strdup(yaml_document_get_node(config, pair->value));
-			}
-			else if (NULL != sub)
+
+			if (NULL != sub)
 			{
 				efflu_data_type_t	type = 0;
 
 				do
 				{
-					if (0 != efflu_scalar_cmp(efflu_data_type_string(type), key))
-						continue;
-
-					efflu_parse_node(config, yaml_document_get_node(config, pair->value),
-							sub[type], NULL);
-					break;
+					if (0 == efflu_scalar_cmp(efflu_data_type_string(type), key))
+						break;
 				}
 				while (EFFLU_DATA_TYPE_COUNT > ++type);
+
+				if (EFFLU_DATA_TYPE_COUNT > type)
+				{
+					efflu_destination_t	tmp = {0};
+
+					if (NULL != sub[type])
+					{
+						printf("Configuration for \"%s\" is specified twice.\n", efflu_data_type_string(type));
+						return -1;
+					}
+
+					printf("Parsing \"%s\" configuration...\n", efflu_data_type_string(type));
+
+					if (-1 == efflu_parse_node(config, yaml_document_get_node(config, pair->value),
+							&tmp, NULL))
+					{
+						return -1;
+					}
+
+					sub[type] = malloc(sizeof(efflu_destination_t));
+					*sub[type] = tmp;
+					continue;
+				}
 			}
-			else
+
+			printf("Unexpected key \"%.*s\" in mapping.\n",
+					(int)key->data.scalar.length, key->data.scalar.value);
+			return -1;
+		}
+		else if (YAML_SEQUENCE_NODE == key->type && NULL != sub)
+		{
+			const yaml_node_item_t	*item;
+
+			for (item = key->data.sequence.items.start; item < key->data.sequence.items.top; item++)
 			{
-				printf("Unexpected key \"%.*s\" in mapping.\n",
-						(int)key->data.scalar.length, key->data.scalar.value);
+				const yaml_node_t	*elem;
+				efflu_data_type_t	type = 0;
+
+				elem = yaml_document_get_node(config, *item);
+
+				if (YAML_SCALAR_NODE != elem->type)
+				{
+					printf("Sequence item must be a scalar.\n");
+					return -1;
+				}
+
+				do
+				{
+					if (0 == efflu_scalar_cmp(efflu_data_type_string(type), elem))
+						break;
+				}
+				while (EFFLU_DATA_TYPE_COUNT > ++type);
+
+				if (EFFLU_DATA_TYPE_COUNT > type)
+				{
+					efflu_destination_t	tmp = {0};
+
+					if (NULL != sub[type])
+					{
+						printf("Configuration for \"%s\" is specified twice.\n", efflu_data_type_string(type));
+						return -1;
+					}
+
+					printf("Parsing \"%s\" configuration...\n", efflu_data_type_string(type));
+
+					if (-1 == efflu_parse_node(config, yaml_document_get_node(config, pair->value),
+							&tmp, NULL))
+					{
+						return -1;
+					}
+
+					sub[type] = malloc(sizeof(efflu_destination_t));
+					*sub[type] = tmp;
+					continue;
+				}
+
+				printf("Unexpected item \"%.*s\" in sequence.\n",
+						(int)elem->data.scalar.length, elem->data.scalar.value);
 				return -1;
 			}
-		}
-		else if (YAML_SEQUENCE_NODE == key->type)
-		{
-			/* TODO combination of several data types */
 		}
 		else
 		{
@@ -126,7 +203,7 @@ int	efflu_parse_configuration(FILE *config_file)
 	{
 		if (NULL != (root = yaml_document_get_root_node(&config)))
 		{
-			printf("Parsing root node...\n");
+			printf("Parsing global configuration...\n");
 			ret = efflu_parse_node(&config, root, &configuration.global, configuration.by_type);
 			yaml_document_delete(&config);
 		}
@@ -195,8 +272,11 @@ void	efflu_clean_configuration(void)
 
 	do
 	{
-		if (NULL != configuration.by_type[type])
-			efflu_clean_destination(*configuration.by_type[type]);
+		if (NULL == configuration.by_type[type])
+			continue;
+
+		efflu_clean_destination(*configuration.by_type[type]);
+		free(configuration.by_type[type]);
 	}
 	while (EFFLU_DATA_TYPE_COUNT > ++type);
 
