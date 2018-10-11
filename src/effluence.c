@@ -160,7 +160,7 @@ static void	efflu_append_LOG_line(char **post, size_t *size, size_t *offset, con
 
 static void	efflu_write(efflu_destination_t destination, const char *post)
 {
-	char		*db_encoded, *endpoint;
+	char		*db_encoded, *endpoint = NULL;
 	CURLcode	ret;
 	long		res;
 
@@ -258,6 +258,9 @@ ZBX_HISTORY_WRITE_CBS	zbx_module_history_write_cbs(void)
 				break;
 			case EFFLU_DATA_TYPE_LOG:
 				callbacks.history_log_cb = efflu_LOG_cb;
+				break;
+			case EFFLU_DATA_TYPE_COUNT:
+				printf("Internal error. Execution should never reach this code.\n");
 		}
 	}
 	while (EFFLU_DATA_TYPE_COUNT > ++type);
