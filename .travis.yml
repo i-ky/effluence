@@ -17,4 +17,4 @@ before_script:
 - ./configure
 - cd -
 script:
-- $CC -fPIC -shared -o effluence.so src/*.c -Izabbix/include -lyaml `curl-config --cflags --libs`
+- ZABBIX_SOURCE=zabbix CFLAGS='-Wall -Wextra -Wpedantic -g -O2' make

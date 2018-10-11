@@ -1,2 +1,10 @@
-effluence: src/*.c src/*.h
-	cc -fPIC -shared -o effluence.so src/*.c -I$(ZABBIX_SOURCE)/include `curl-config --cflags --libs` $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(LIBS)
+CFLAGS:=-fPIC -I$(ZABBIX_SOURCE)/include $(CFLAGS)
+OBJECTS:=$(patsubst %.c,%.o,$(wildcard src/*.c))
+
+effluence.so: $(OBJECTS)
+	$(CC) `curl-config --libs` -lyaml $(LDFLAGS) $(LIBS) $(OBJECTS) -shared -o $@
+
+all: effluence.so
+
+clean:
+	rm -rf $(OBJECTS) effluence.so
