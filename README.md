@@ -258,3 +258,38 @@ Another way to provide identical attributes for different data types is to use *
   user: effluence
   pass: r3a11y_$tr0n9_pa$$w0rd
 ```
+
+### database schema
+
+Regardless of configured `url` and `database`
+each data type will be stored in separate
+[measurement](https://docs.influxdata.com/influxdb/latest/concepts/glossary/#measurement).
+
+*Type of information* | measurement
+----------------------|------------
+*Numeric (float)*     | `history`
+*Numeric (unsigned)*  | `history_uint`
+*Character*           | `history_str`
+*Text*                | `history_text`
+*Log*                 | `history_log`
+
+As you see, measurement names are the same as table names in Zabbix DB.
+There is a good reason for this.
+Measurements are analogous to SQL tables and
+having same names simplifies writing
+[queries](https://docs.influxdata.com/influxdb/latest/query_language/data_exploration/)
+for different backends.
+
+All measurements will have the only [tag](https://docs.influxdata.com/influxdb/latest/concepts/glossary/#tag) named `itemid` and a [field](https://docs.influxdata.com/influxdb/latest/concepts/glossary/#field) named `value`.
+Measurement `history_log` will additionally have `source`, `timestamp`, `logeventid` and `severity` fields.
+And of course every datapoint in InfluxDB has a `time` associated with it.
+
+One important thing to note is that _Numeric (unsigned)_ values are stored as floats,
+because unlike Zabbix which uses *unsigned* 64 bit integers,
+InfluxDB prefers *signed* 64 bit integers.
+Since it would not possible to squeeze largest Zabbix integers into InfluxDB integer type
+and InfluxDB
+[does not support fields changing type on the fly](https://docs.influxdata.com/influxdb/latest/write_protocols/line_protocol_reference/#field-type-discrepancies),
+decision was made to store all numeric values as floats.
+Yes, for largest values some precision will be lost,
+but hopefully it won't be noticeable.
