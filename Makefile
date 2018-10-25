@@ -2,7 +2,7 @@ CFLAGS:=-fPIC -I$(ZABBIX_SOURCE)/include $(CFLAGS)
 OBJECTS:=$(patsubst %.c,%.o,$(wildcard src/*.c))
 
 effluence.so: $(OBJECTS)
-	$(CC) `curl-config --libs` -lyaml $(LDFLAGS) $(LIBS) $(OBJECTS) -shared -o $@
+	$(CC) $(LDFLAGS) $(LIBS) `curl-config --libs` -lyaml $(OBJECTS) -shared -o $@
 
 all: effluence.so
 
