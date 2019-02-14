@@ -69,7 +69,7 @@ and as a consequence database write operations will no longer limit the performa
 ### get binaries
 
 Check out
-[the latest release](releases/latest)
+[the latest release](https://github.com/i-ky/effluence/releases/latest)
 for precompiled binaries or
 [compile](./COMPILE.md)
 from sources yourself.
