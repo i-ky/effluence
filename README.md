@@ -1,7 +1,7 @@
 # effluence [![Build Status](https://www.travis-ci.com/i-ky/effluence.svg?branch=master)](https://www.travis-ci.com/i-ky/effluence)
 
 [Zabbix](http://www.zabbix.com)
-[loadable module](https://www.zabbix.com/documentation/4.0/manual/config/items/loadablemodules)
+[loadable module](https://www.zabbix.com/documentation/current/manual/config/items/loadablemodules)
 for real-time export of history to
 [InfluxDB](https://www.influxdata.com/time-series-platform/influxdb/)
 
@@ -66,41 +66,13 @@ and as a consequence database write operations will no longer limit the performa
 
 ## quick start
 
-### compile
+### get binaries
 
-1. [Download](http://www.zabbix.com/download)
-Zabbix source or check it out from
-[SVN repository](https://www.zabbix.org/websvn/wsvn/zabbix.com?):
-```bash
-svn checkout svn://svn.zabbix.com/branches/4.0
-```
-> Version must be higher than 3.2 (when history export support was added). You need to compile module using sources of the version you will be using it with!
-
-2. Configure Zabbix sources:
-```bash
-cd /path/to/zabbix/source
-./configure
-```
-
-3. Install
-[`libcurl`](https://curl.haxx.se/libcurl/)
-and
-[`libyaml`](https://pyyaml.org/wiki/LibYAML)
-development packages,
-sort of:
-```bash
-sudo apt install libcurl4-openssl-dev libyaml-dev
-```
-
-4. Get module sources,
-point them to Zabbix source directory
-and run `make` to build,
-it should produce `effluence.so` shared library.
-```bash
-cd /path/to/effluence/source
-export ZABBIX_SOURCE=/path/to/zabbix/source
-make
-```
+Check out
+[the latest release](releases/latest)
+for precompiled binaries or
+[compile](./COMPILE.md)
+from sources yourself.
 
 ### install
 
@@ -108,8 +80,14 @@ make
 [`libcurl`](https://curl.haxx.se/libcurl/)
 and
 [`libyaml`](https://pyyaml.org/wiki/LibYAML)
-in case you were compiling on a different machine,
+in case you are using precompiled binaries or
+were compiling on a different machine,
 sort of:
+ * CentOS:
+```bash
+sudo yum install libcurl libyaml
+```
+ * Ubuntu:
 ```bash
 sudo apt install libcurl4 libyaml-0-2
 ```
@@ -126,7 +104,7 @@ cp effluence.so /path/to/zabbix/modules/
 1. Create
 [database(s)](https://docs.influxdata.com/influxdb/latest/introduction/getting-started/#creating-a-database)
 and
-[user(s)](docs.influxdata.com/influxdb/latest/administration/authentication_and_authorization)
+[user(s)](http://docs.influxdata.com/influxdb/latest/administration/authentication_and_authorization)
 in your InfluxDB instance(s).
 
 2. Create module [configuration file](#configuration-file-format):
@@ -136,11 +114,17 @@ db:   zabbix
 user: effluence
 pass: r3a11y_$tr0n9_pa$$w0rd
 ```
+> This is a very simple configuration to export all data types.
+However, if your only goal is integration with Grafana,
+consider exporting only numeric data types (learn
+[here](#configuration-file-for-exporting-numeric-values-only)
+how to achieve this).
+At the moment Zabbix plugin queries other data types from Zabbix API.
 
 3. Set `EFFLU_CONFIG` environment variable for Zabbix server to the path to module configuration file.
 
 4. Set `LoadModulePath` and `LoadModule` parameters in Zabbix
-[server](https://www.zabbix.com/documentation/4.0/manual/appendix/config/zabbix_server)
+[server](https://www.zabbix.com/documentation/current/manual/appendix/config/zabbix_server)
 configuration file.
 ```
 LoadModulePath=/path/to/zabbix/modules
@@ -148,6 +132,24 @@ LoadModule=effluence.so
 ```
 
 5. Restart Zabbix server.
+
+### enjoy
+
+But keep in mind that there is
+[more](#boring-details)
+to learn when you come back later.
+You may want to fine-tune
+[configuration](#configuration-file-format)
+and know how to keep
+[database size](#database-sizing)
+under control.
+If you are **not** planning to use Zabbix plugin for Grafana,
+there is
+[some useful information](#database-schema)
+regarding data representation in InfluxDB.
+It will be handy if you decide to
+[explore your data](https://docs.influxdata.com/influxdb/latest/query_language/data_exploration)
+using InfluxQL.
 
 ## boring details
 
@@ -183,7 +185,7 @@ data type | *Type of information*
 `text`    | *Text*
 `log`     | *Log*
 
-If there is section for a specific data type,
+If there is no section for a specific data type,
 module will use global attributes (if provided).
 If the configuration of a particular data type lacks any one of mandatory attributes,
 then the callback for that data type is not provided to Zabbix server
@@ -284,12 +286,68 @@ All measurements will have the only [tag](https://docs.influxdata.com/influxdb/l
 Measurement `history_log` will additionally have `source`, `timestamp`, `logeventid` and `severity` fields.
 And of course every datapoint in InfluxDB has a `time` associated with it.
 
-One important thing to note is that _Numeric (unsigned)_ values are stored as floats,
+One important thing to note is that *Numeric (unsigned)* values are stored as floats,
 because unlike Zabbix which uses *unsigned* 64 bit integers,
 InfluxDB prefers *signed* 64 bit integers.
-Since it would not possible to squeeze largest Zabbix integers into InfluxDB integer type
+Since it wouldn't be possible to squeeze largest Zabbix integers into InfluxDB integer type
 and InfluxDB
 [does not support fields changing type on the fly](https://docs.influxdata.com/influxdb/latest/write_protocols/line_protocol_reference/#field-type-discrepancies),
 decision was made to store all numeric values as floats.
 Yes, for largest values some precision will be lost,
 but hopefully it won't be noticeable.
+
+### database sizing
+
+Fortunately, InfluxDB provides enough
+[tools](https://docs.influxdata.com/influxdb/latest/guides/downsampling_and_retention/)
+to solve this problem.
+This allows to keep module simple and ~~stupid~~ reliable.
+This also provides more flexibility to the end user because no parameters are hard coded.
+
+InfluxDB has a mechanism of
+[retention policies](https://docs.influxdata.com/influxdb/latest/concepts/glossary/#retention-policy-rp)
+to keep the size of the database under control.
+Please [create](https://docs.influxdata.com/influxdb/latest/query_language/database_management/#retention-policy-management)
+one and make it `default`,
+because module will only write data into default retention policy of the database.
+Retention policies specify how long InfluxDB stores the data.
+Without retention policy data is never deleted from InfluxDB and your database may grow out of control.
+
+One more sensible thing to do is to aggregate older numeric data.
+This will be good for both database size
+and performance of queries with longer intervals.
+In Zabbix this concept is known as
+[history and trends](https://www.zabbix.com/documentation/current/manual/config/items/history_and_trends),
+in InfluxDB same can be achieved using
+[continuous queries](https://docs.influxdata.com/influxdb/latest/query_language/continuous_queries).
+[Create](https://docs.influxdata.com/influxdb/latest/query_language/database_management/#retention-policy-management)
+one more retention policy for trends (non-`default` this time) with longer (or even infinite) storage duration.
+Populate it with a couple of continuous queries like these two
+(assuming database is called `zabbix`
+and retention policy is `longterm`):
+```sql
+CREATE CONTINUOUS QUERY trends ON zabbix
+BEGIN
+    SELECT
+        count(value) AS num,
+        min(value) AS value_min,
+        mean(value) AS value_avg,
+        max(value) AS value_max
+    INTO
+        zabbix.longterm.:MEASUREMENT
+    FROM
+        /history(?:_uint)?$/
+    GROUP BY
+        time(1h,2h),*
+END
+```
+> Users of Zabbix plugin for Grafana should refer to plugin's documentation to get the **exact** measurement and field names.
+Otherwise plugin won't be able to find the data!
+
+InfluxDB lets user to be creative and does not limit you to one aggregation stage.
+For example,
+you can keep raw data for a day
+and aggregate it on an hourly basis.
+Then you can keep hourly data for a week
+and further aggregate it on a daily basis
+before storing it forever.
