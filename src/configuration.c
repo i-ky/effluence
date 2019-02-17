@@ -35,10 +35,14 @@ static char	*efflu_strdup(const yaml_node_t *node)
 	if (YAML_SCALAR_NODE != node->type)
 		printf("Internal error: attempt to copy nonscalar node as string.\n");
 
-	/* TODO malloc() may return NULL, handle it */
-	tmp = malloc(node->data.scalar.length + 1);
-	memcpy(tmp, node->data.scalar.value, node->data.scalar.length);
-	tmp[node->data.scalar.length] = '\0';
+	if (NULL != (tmp = malloc(node->data.scalar.length + 1)))
+	{
+		memcpy(tmp, node->data.scalar.value, node->data.scalar.length);
+		tmp[node->data.scalar.length] = '\0';
+	}
+	else
+		printf("Out of memory.\n");
+
 	return tmp;
 }
 
@@ -84,7 +88,9 @@ static int	efflu_parse_node(yaml_document_t *config, const yaml_node_t *node, ef
 
 			if (NULL != option->name)
 			{
-				*option->storage = efflu_strdup(yaml_document_get_node(config, pair->value));
+				if (NULL == (*option->storage = efflu_strdup(yaml_document_get_node(config, pair->value))))
+					return -1;
+
 				continue;
 			}
 
