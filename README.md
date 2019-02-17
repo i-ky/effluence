@@ -1,4 +1,4 @@
-# effluence [![Build Status](https://www.travis-ci.com/i-ky/effluence.svg?branch=master)](https://www.travis-ci.com/i-ky/effluence)
+# effluence [![Travis CI Build Status](https://www.travis-ci.com/i-ky/effluence.svg?branch=master)](https://www.travis-ci.com/i-ky/effluence) [![Coverity Scan Build Status](https://scan.coverity.com/projects/17710/badge.svg)](https://scan.coverity.com/projects/i-ky-effluence)
 
 [Zabbix](http://www.zabbix.com)
 [loadable module](https://www.zabbix.com/documentation/current/manual/config/items/loadablemodules)
