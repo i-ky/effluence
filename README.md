@@ -107,7 +107,7 @@ and
 [user(s)](http://docs.influxdata.com/influxdb/latest/administration/authentication_and_authorization)
 in your InfluxDB instance(s).
 
-2. Create module [configuration file](#configuration-file-format):
+2. Create module [configuration file](#configuration-file-format) (e.g. `/etc/zabbix/effluence.conf`):
 ```yaml
 url:  http://localhost:8086
 db:   zabbix
@@ -122,6 +122,10 @@ how to achieve this).
 At the moment Zabbix plugin queries other data types from Zabbix API.
 
 3. Set `EFFLU_CONFIG` environment variable for Zabbix server to the path to module configuration file.
+- Ubuntu: create `/etc/default/zabbix-server` with content:
+```
+EFFLU_CONFIG=/etc/zabbix/effluence.conf
+```
 
 4. Set `LoadModulePath` and `LoadModule` parameters in Zabbix
 [server](https://www.zabbix.com/documentation/current/manual/appendix/config/zabbix_server)
