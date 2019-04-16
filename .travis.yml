@@ -4,8 +4,8 @@ compiler:
 - gcc
 env:
 - BRANCH=trunk
+- BRANCH=branches/4.2
 - BRANCH=branches/4.0
-- BRANCH=branches/3.4
 sudo: true
 before_install:
 - sudo apt install subversion
