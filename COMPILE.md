@@ -4,7 +4,7 @@
 Zabbix source or check it out from
 [Git repository](https://git.zabbix.com/):
 ```bash
-git clone https://git.zabbix.com/scm/zbx/zabbix.git --depth 1
+git clone https://git.zabbix.com/scm/zbx/zabbix.git --depth 1 /path/to/zabbix/source
 ```
 > Version must be higher than 3.2
 (when history export support was added).
