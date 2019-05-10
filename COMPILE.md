@@ -2,9 +2,9 @@
 
 1. [Download](http://www.zabbix.com/download)
 Zabbix source or check it out from
-[SVN repository](https://www.zabbix.org/websvn/wsvn/zabbix.com):
+[Git repository](https://git.zabbix.com/):
 ```bash
-svn checkout svn://svn.zabbix.com/branches/4.0 /path/to/zabbix/source
+git clone https://git.zabbix.com/scm/zbx/zabbix.git --depth 1
 ```
 > Version must be higher than 3.2
 (when history export support was added).
