@@ -12,6 +12,12 @@ suggests,
 the module is not ready yet for the use in production,
 but testing it is very much appreciated
 and any suggestion on performance tuning is welcomed!
+One size does not fit all
+and you may find that
+[zensqlmonitor/influxdb-zabbix](https://github.com/zensqlmonitor/influxdb-zabbix)
+or
+[LMacPhail/zabbix-history-influxdb](https://github.com/LMacPhail/zabbix-history-influxdb)
+will suit your needs better.
 
 ## background
 
