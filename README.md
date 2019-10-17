@@ -3,7 +3,7 @@
 [Zabbix](http://www.zabbix.com)
 [loadable module](https://www.zabbix.com/documentation/current/manual/config/items/loadablemodules)
 for real-time export of history to
-[InfluxDB](https://www.influxdata.com/time-series-platform/influxdb/)
+[InfluxDB](https://www.influxdata.com/products/influxdb-overview/)
 
 **Disclaimer**:
 As
