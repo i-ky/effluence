@@ -6,7 +6,6 @@ dist: xenial
 env:
 - BRANCH=master
 - BRANCH=release/4.4
-- BRANCH=release/4.2
 - BRANCH=release/4.0
 sudo: true
 before_install:
