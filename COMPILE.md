@@ -13,6 +13,7 @@ You need to compile module using sources of the version you will be using it wit
 2. Configure Zabbix sources:
 ```bash
 cd /path/to/zabbix/source
+./bootstrap.sh
 ./configure
 ```
 
