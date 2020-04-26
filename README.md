@@ -1,3 +1,5 @@
+[![Gitpod Ready-to-Code](https://img.shields.io/badge/Gitpod-Ready--to--Code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/i-ky/effluence) 
+
 # effluence [![Travis CI Build Status](https://www.travis-ci.com/i-ky/effluence.svg?branch=master)](https://www.travis-ci.com/i-ky/effluence) [![Coverity Scan Build Status](https://img.shields.io/coverity/scan/17710.svg)](https://scan.coverity.com/projects/i-ky-effluence)
 
 [Zabbix](http://www.zabbix.com)
