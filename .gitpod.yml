@@ -1,7 +1,8 @@
 tasks:
 - init: >-
-    export ZABBIX_SOURCE=zabbix &&
+    export ZABBIX_SOURCE="$HOME/zabbix" &&
     git clone https://git.zabbix.com/scm/zbx/zabbix.git --depth 1 "$ZABBIX_SOURCE" &&
+    "$ZABBIX_SOURCE/bootstrap.sh" &&
     "$ZABBIX_SOURCE/configure" &&
     make
 image:
