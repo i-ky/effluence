@@ -2,8 +2,10 @@ tasks:
 - init: >-
     export ZABBIX_SOURCE="$HOME/zabbix" &&
     git clone https://git.zabbix.com/scm/zbx/zabbix.git --depth 1 "$ZABBIX_SOURCE" &&
-    "$ZABBIX_SOURCE/bootstrap.sh" &&
-    "$ZABBIX_SOURCE/configure" &&
+    cd "$ZABBIX_SOURCE" &&
+    ./bootstrap.sh &&
+    ./configure &&
+    cd - &&
     make
 image:
   file: .gitpod.Dockerfile
