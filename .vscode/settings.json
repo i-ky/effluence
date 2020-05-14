@@ -1,6 +1,6 @@
 {
   "cpp.clangTidy": true,
-  "cpp.clangTidyChecks": "*,-cppcoreguidelines-init-variables,-*-braces-around-statements,-readability-isolate-declaration",
+  "cpp.clangTidyChecks": "*,-android-*,-cppcoreguidelines-init-variables,-cppcoreguidelines-avoid-non-const-global-variables,-hicpp-multiway-paths-covered,-*-braces-around-statements,-*-magic-numbers,-readability-else-after-return,-readability-isolate-declaration",
   "files.associations": {
     "*.h": "c"
   },
