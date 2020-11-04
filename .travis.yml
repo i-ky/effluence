@@ -5,6 +5,7 @@ compiler:
 dist: xenial
 env:
 - BRANCH=master
+- BRANCH=release/5.2
 - BRANCH=release/5.0
 - BRANCH=release/4.0
 sudo: true
