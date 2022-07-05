@@ -6,7 +6,6 @@
 
 #include <curl/curl.h>
 
-#include "sysinc.h"
 #include "module.h"
 
 #include "configuration.h"
