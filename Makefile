@@ -1,4 +1,4 @@
-CFLAGS:=-fPIC -I$(ZABBIX_SOURCE)/include $(CFLAGS)
+CFLAGS:=-fPIC -I$(ZABBIX_SOURCE)/include -I$(ZABBIX_SOURCE)/include/common $(CFLAGS)
 OBJECTS:=$(patsubst %.c,%.o,$(wildcard src/*.c))
 
 effluence.so: $(OBJECTS)
