@@ -8,7 +8,6 @@ env:
 - BRANCH=release/6.4
 - BRANCH=release/6.0
 - BRANCH=release/5.0
-sudo: true
 before_install:
 - sudo apt install libyaml-dev
 before_script:
