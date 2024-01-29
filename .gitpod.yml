@@ -6,6 +6,6 @@ tasks:
     ./bootstrap.sh &&
     ./configure &&
     cd - &&
-    bear make
+    bear -- make
 image:
   file: .gitpod.Dockerfile
