@@ -55,4 +55,4 @@ dkms.conf
 compile_commands.json
 
 # clangd index
-.clangd/
+.cache/

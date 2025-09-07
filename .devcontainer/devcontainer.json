@@ -1,0 +1,12 @@
+{
+    "image": "mcr.microsoft.com/devcontainers/universal:4-linux",
+    "features": {
+        "ghcr.io/rocker-org/devcontainer-features/apt-packages:1": {
+            "packages": "bear"
+        }
+    },
+    "containerEnv": {
+        "ZABBIX_SOURCE": "/workspaces/zabbix"
+    },
+    "onCreateCommand": "git clone https://git.zabbix.com/scm/zbx/zabbix.git --depth 1 \"$ZABBIX_SOURCE\" && cd \"$ZABBIX_SOURCE\" && ./bootstrap.sh && ./configure && cd - && bear -- make"
+}
